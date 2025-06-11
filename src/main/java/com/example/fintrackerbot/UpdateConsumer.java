@@ -8,84 +8,126 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @Component
 public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
-    private final TelegramClient telegramClient;
+    private static final List<String> BUTTONS = List.of(
+            "Курсы валют", "Курсы криптовалют", "Драгоценные металлы", "Нефть");
+    private static final int BUTTONS_PER_ROW = 2;
 
-    private final Map<String, Supplier<String>> commandHandlers = Map.of(
-            "Курсы валют", BusinessDataGenerator::generateJuridicalInn,
-            "Курсы криптовалют", BusinessDataGenerator::generateIndividualInn,
-            "Драгоценные металлы", BusinessDataGenerator::generateOgrn,
-            "Нефть", BusinessDataGenerator::generateOgrnIp
-    );
+    private final TelegramClient telegramClient;
+    private final Map<String, Consumer<Long>> commandHandlers;
+
+    private Map<String, Consumer<Long>> initializeCommandHandlers() {
+        Map<String, Consumer<Long>> handlers = new HashMap<>();
+
+        handlers.put("/start", this::sendReplyKeyboard);
+        handlers.put("Курсы валют", this::getCurrencyRates);
+        handlers.put("Курсы криптовалют", this::getCryptoRates);
+        handlers.put("Драгоценные металлы", this::getMetalRates);
+        handlers.put("Нефть", this::getOilPrice);
+
+        return handlers;
+    }
 
     public UpdateConsumer() {
-        this.telegramClient = new OkHttpTelegramClient(""); // добавь токен
+        this.telegramClient = new OkHttpTelegramClient("");
+        this.commandHandlers = initializeCommandHandlers();
     }
 
     @SneakyThrows
     @Override
     public void consume(Update update) {
-        if (!update.hasMessage()) return;
+        if (!update.hasMessage()) {
+            return;
+        }
 
         var message = update.getMessage();
         var chatId = message.getChatId();
         var text = message.getText();
 
-        if ("/start".equals(text)) {
-            sendReplyKeyboard(chatId);
-        } else {
-            Supplier<String> handler = commandHandlers.get(text);
-            if (handler != null) {
-                sendMessage(chatId, handler.get());
-            } else {
-                sendMessage(chatId, "Я вас не понимаю");
-            }
+        if (text == null) {
+            return;
         }
+
+        Consumer<Long> handler = commandHandlers.getOrDefault(text,
+                id -> sendMessage(id, "Я вас не понимаю"));
+        handler.accept(chatId);
     }
 
     @SneakyThrows
     private void sendReplyKeyboard(Long chatId) {
-        List<String> buttons = List.of(
-                "Курсы валют", "Курсы криптовалют", "Золото",
-                "Нефть"
-        );
+        var keyboardRows = new ArrayList<KeyboardRow>();
 
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        for (int i = 0; i < buttons.size(); i += 3) {
-            KeyboardRow row = new KeyboardRow();
-            row.addAll(buttons.subList(i, Math.min(i + 3, buttons.size())));
-            keyboard.add(row);
+        for (int i = 0; i < BUTTONS.size(); i += BUTTONS_PER_ROW) {
+            var row = new KeyboardRow();
+            BUTTONS.stream()
+                    .skip(i)
+                    .limit(BUTTONS_PER_ROW)
+                    .forEach(row::add);
+            keyboardRows.add(row);
         }
 
-        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup(keyboard);
-        markup.setResizeKeyboard(true);
-        markup.setOneTimeKeyboard(false);
+        var markup = ReplyKeyboardMarkup.builder()
+                .keyboard(keyboardRows)
+                .resizeKeyboard(true)
+                .oneTimeKeyboard(false)
+                .build();
 
-        SendMessage message = SendMessage.builder()
+        var message = SendMessage.builder()
                 .chatId(chatId.toString())
                 .text("Выберите значение из списка:")
                 .replyMarkup(markup)
                 .build();
 
-        telegramClient.execute(message);
+        try {
+            telegramClient.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     @SneakyThrows
-    private void sendMessage(Long chatId, String text) {
-        SendMessage message = SendMessage.builder()
+    private void sendMessage(Long chatId, String messageText) {
+        var message = SendMessage.builder()
+                .text(messageText)
                 .chatId(chatId.toString())
-                .text(text)
                 .build();
+        try {
+            telegramClient.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
 
-        telegramClient.execute(message);
+    private void sendGeneratedValue(Long chatId, Supplier<String> generator) {
+        String value = generator.get();
+        sendMessage(chatId, value);
+    }
+
+    private void getCurrencyRates (Long chatId) {
+        //sendGeneratedValue(chatId, BusinessDataGenerator::generateJuridicalInn);
+    }
+
+    private void getCryptoRates(Long chatId) {
+        //sendGeneratedValue(chatId, BusinessDataGenerator::generateIndividualInn);
+    }
+
+    private void getMetalRates(Long chatId) {
+        //sendGeneratedValue(chatId, BusinessDataGenerator::generateOgrn);
+    }
+
+    private void getOilPrice(Long chatId) {
+        //sendGeneratedValue(chatId, BusinessDataGenerator::generateOgrnIp);
     }
 }
