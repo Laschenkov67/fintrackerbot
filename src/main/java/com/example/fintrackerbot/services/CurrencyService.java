@@ -38,12 +38,11 @@ public class CurrencyService {
     }
 
     public String formatCurrencyRates(Map<String, Double> rates) {
-        StringBuilder sb = new StringBuilder("Курсы валют к RUB:\n```\n");
+        StringBuilder sb = new StringBuilder("Курсы валют к RUB:\n \n");
         sb.append(String.format("%-6s | %10s%n", "Валюта", "Курс"));
         sb.append("--------+------------\n");
 
         rates.forEach((k, v) -> sb.append(String.format("%-6s | %10s%n", k, df.format(v))));
-        sb.append("```");
 
         return sb.toString();
     }

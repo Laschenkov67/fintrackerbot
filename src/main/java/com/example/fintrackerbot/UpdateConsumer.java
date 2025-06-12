@@ -1,5 +1,9 @@
 package com.example.fintrackerbot;
 
+import com.example.fintrackerbot.services.CryptoService;
+import com.example.fintrackerbot.services.CurrencyService;
+import com.example.fintrackerbot.services.MetalService;
+import com.example.fintrackerbot.services.OilService;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
@@ -27,6 +31,10 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
     private final TelegramClient telegramClient;
     private final Map<String, Consumer<Long>> commandHandlers;
+    private final CurrencyService currencyService;
+    private final CryptoService cryptoService;
+    private final MetalService metalService;
+    private final OilService oilService;
 
     private Map<String, Consumer<Long>> initializeCommandHandlers() {
         Map<String, Consumer<Long>> handlers = new HashMap<>();
@@ -40,9 +48,18 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
         return handlers;
     }
 
-    public UpdateConsumer() {
+    public UpdateConsumer(
+            CurrencyService currencyService,
+            CryptoService cryptoService,
+            MetalService metalService,
+            OilService oilService
+    ) {
         this.telegramClient = new OkHttpTelegramClient("");
         this.commandHandlers = initializeCommandHandlers();
+        this.currencyService = currencyService;
+        this.cryptoService = cryptoService;
+        this.metalService = metalService;
+        this.oilService = oilService;
     }
 
     @SneakyThrows
@@ -116,18 +133,38 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private void getCurrencyRates (Long chatId) {
-        //sendGeneratedValue(chatId, BusinessDataGenerator::generateJuridicalInn);
+        try {
+            String rates = currencyService.formatCurrencyRates(currencyService.getCurrencyRates());
+            sendMessage(chatId, rates);
+        } catch (Exception e) {
+            sendMessage(chatId, "Ошибка получения курсов валют");
+        }
     }
 
     private void getCryptoRates(Long chatId) {
-        //sendGeneratedValue(chatId, BusinessDataGenerator::generateIndividualInn);
+        try {
+            String rates = cryptoService.formatCryptoRates(cryptoService.getCryptoRates());
+            sendMessage(chatId, rates);
+        } catch (Exception e) {
+            sendMessage(chatId, "Ошибка получения курсов криптовалют");
+        }
     }
 
     private void getMetalRates(Long chatId) {
-        //sendGeneratedValue(chatId, BusinessDataGenerator::generateOgrn);
+        try {
+            String rates = metalService.formatMetalPrices(metalService.getMetalPrices());
+            sendMessage(chatId, rates);
+        } catch (Exception e) {
+            sendMessage(chatId, "Ошибка получения цен на металлы");
+        }
     }
 
     private void getOilPrice(Long chatId) {
-        //sendGeneratedValue(chatId, BusinessDataGenerator::generateOgrnIp);
+        try {
+            String prices = oilService.formatOilPrices(oilService.getOilPrices());
+            sendMessage(chatId, prices);
+        } catch (Exception e) {
+            sendMessage(chatId, "Ошибка получения цен на нефть");
+        }
     }
 }
