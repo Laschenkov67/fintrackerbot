@@ -27,4 +27,7 @@ public class LoggingService {
     public void logTrace(String message) {
         logger.trace(message);
     }
+
+    public void logError(String s) {
+    }
 }

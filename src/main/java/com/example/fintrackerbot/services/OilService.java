@@ -26,7 +26,7 @@ public class OilService extends MarketQuoteService {
 
     public Map<String, Double> getOilPrices() {
         try {
-            JsonNode rootNode = getJsonFromUrlWithAuth(apiUrl, apiKey);
+            JsonNode rootNode = getJsonFromUrlWithAuth(apiUrl, apiKey, 3600);
             double brentPrice = rootNode.path("data").path("price").asDouble();
             Map<String, Double> prices = new LinkedHashMap<>();
             prices.put("Brent", brentPrice);

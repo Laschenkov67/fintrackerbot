@@ -23,7 +23,7 @@ public class CryptoService extends MarketQuoteService {
     }
 
     public Map<String, Double> getCryptoRates() throws Exception {
-        JsonNode root = getJsonFromUrl(apiUrl);
+        JsonNode root = getJsonFromUrl(apiUrl, 3600);
 
         Map<String, Double> rates = new LinkedHashMap<>();
         for (String coin : List.of("bitcoin", "ethereum", "tether", "solana", "toncoin")) {

@@ -23,7 +23,7 @@ public class CurrencyService extends MarketQuoteService {
     }
 
     public Map<String, Double> getCurrencyRates() throws Exception {
-        JsonNode ratesNode = getJsonFromUrl(apiUrl).path("rates");
+        JsonNode ratesNode = getJsonFromUrl(apiUrl, 3600).path("rates");
 
         Map<String, Double> rates = new LinkedHashMap<>();
         for (String currency : List.of("USD", "EUR", "JPY", "CNY", "GBP")) {

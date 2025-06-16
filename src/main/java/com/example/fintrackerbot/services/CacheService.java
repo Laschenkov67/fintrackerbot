@@ -1,36 +1,38 @@
 package com.example.fintrackerbot.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class CacheService {
-    private final RedisTemplate<String, Object> redisTemplate;
 
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ValueOperations<String, Object> valueOps;
+
+    @Autowired
     public CacheService(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
+        this.valueOps = redisTemplate.opsForValue();
     }
 
-    public void put(String key, Object value, long ttl, TimeUnit timeUnit) {
-        redisTemplate.opsForValue().set(key, value, ttl, timeUnit);
+    public void set(String key, Object value, long ttlInSeconds) {
+        valueOps.set(key, value, Duration.ofSeconds(ttlInSeconds));
     }
 
-    public <T> T get(String key, Class<T> type) {
-        Object value = redisTemplate.opsForValue().get(key);
-        if (value != null && type.isInstance(value)) {
-            return type.cast(value);
-        }
-        return null;
+    public Object get(String key) {
+        return valueOps.get(key);
+    }
+
+    public boolean exists(String key) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
 
     public void delete(String key) {
         redisTemplate.delete(key);
-    }
-
-    public boolean hasKey(String key) {
-        Boolean hasKey = redisTemplate.hasKey(key);
-        return hasKey != null && hasKey;
     }
 }
