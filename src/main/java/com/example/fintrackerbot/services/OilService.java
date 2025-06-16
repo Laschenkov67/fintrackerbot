@@ -10,7 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
-public class OilService extends ViewPriceService {
+public class OilService extends MarketQuoteService {
 
     @Value("${oil.api.url}")
     private String apiUrl;

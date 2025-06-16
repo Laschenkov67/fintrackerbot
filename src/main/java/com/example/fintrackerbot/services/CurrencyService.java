@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class CurrencyService extends ViewPriceService {
+public class CurrencyService extends MarketQuoteService {
 
     @Value("${currency.api.url}")
     private String apiUrl;

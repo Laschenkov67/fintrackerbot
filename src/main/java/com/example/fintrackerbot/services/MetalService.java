@@ -4,14 +4,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.text.DecimalFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
-public class MetalService extends ViewPriceService {
+public class MetalService extends MarketQuoteService {
 
     @Value("${metal.api.url}")
     private String apiUrl;
