@@ -1,33 +1,45 @@
-version: "3.8"
-services:
+version: '3.8'
 
+services:
   redis:
-    image: redis:6.2
+    image: redis:7.2
+    container_name: redis
     ports:
       - "6379:6379"
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+    image: bitnami/elasticsearch:8
+    container_name: elasticsearch
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
+      - ELASTICSEARCH_ENABLE_SECURITY=false
+      - ELASTICSEARCH_HEAP_SIZE=1024m
     ports:
       - "9200:9200"
+    volumes:
+      - esdata:/bitnami/elasticsearch
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.9
-    volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    image: bitnami/logstash:8
+    container_name: logstash
     ports:
       - "5000:5000"
+    environment:
+      - LOGSTASH_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    volumes:
+      - ./logstash/pipeline:/bitnami/logstash/pipeline
+    depends_on:
+      - elasticsearch
+      - redis
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.9
+    image: bitnami/kibana:8
+    container_name: kibana
+    environment:
+      - KIBANA_ELASTICSEARCH_URL=http://elasticsearch:9200
     ports:
       - "5601:5601"
+    depends_on:
+      - elasticsearch
 
 volumes:
-  redis_data:
-    driver: local
-  elastic_data:
-    driver: local
+  esdata:
