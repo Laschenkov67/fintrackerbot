@@ -1,38 +1,31 @@
 package com.example.fintrackerbot.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class CacheService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final ValueOperations<String, Object> valueOps;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    @Autowired
-    public CacheService(RedisTemplate<String, Object> redisTemplate) {
+    public CacheService(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
-        this.valueOps = redisTemplate.opsForValue();
     }
 
-    public void set(String key, Object value, long ttlInSeconds) {
-        valueOps.set(key, value, Duration.ofSeconds(ttlInSeconds));
+    public String getFromCache(String key) {
+        ValueOperations<String, String> ops = redisTemplate.opsForValue();
+        return ops.get(key);
     }
 
-    public Object get(String key) {
-        return valueOps.get(key);
+    public void putToCache(String key, String value, long ttlSeconds) {
+        ValueOperations<String, String> ops = redisTemplate.opsForValue();
+        ops.set(key, value, ttlSeconds, TimeUnit.SECONDS);
     }
 
-    public boolean exists(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
-    }
-
-    public void delete(String key) {
+    public void evictFromCache(String key) {
         redisTemplate.delete(key);
     }
 }

@@ -1,44 +1,64 @@
 package com.example.fintrackerbot;
 
-import com.example.fintrackerbot.services.CacheService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.test.context.ActiveProfiles;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import com.example.fintrackerbot.services.CacheService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
-@SpringBootTest
-@ActiveProfiles("test")
 public class CacheServiceTest {
 
-    @Autowired
-    private CacheService redisCacheService;
+    @Mock
+    private RedisTemplate<String, String> redisTemplate;
 
-    @Test
-    public void testRedisSetGet() {
-        String key = "testKey";
-        String value = "testValue";
+    @Mock
+    private ValueOperations<String, String> valueOperations;
 
-        redisCacheService.set(key, value, 60);
-        Object result = redisCacheService.get(key);
+    @InjectMocks
+    private CacheService cacheService;
 
-        assertNotNull(result);
-        assertEquals(value, result.toString());
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test
-    public void testRedisExistsAndDelete() {
-        String key = "testKeyToDelete";
-        redisCacheService.set(key, "value", 60);
-        assertTrue(redisCacheService.exists(key));
-        redisCacheService.delete(key);
-        assertFalse(redisCacheService.exists(key));
+    void testPutToCache() {
+        String key = "testKey";
+        String value = "testValue";
+        long ttl = 60L;
+
+        cacheService.putToCache(key, value, ttl);
+
+        verify(valueOperations, times(1)).set(key, value, ttl, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void testGetFromCache() {
+        String key = "testKey";
+        String expectedValue = "cachedValue";
+
+        when(valueOperations.get(key)).thenReturn(expectedValue);
+
+        String result = cacheService.getFromCache(key);
+
+        assertEquals(expectedValue, result);
+        verify(valueOperations, times(1)).get(key);
+    }
+
+    @Test
+    void testEvictFromCache() {
+        String key = "testKey";
+
+        cacheService.evictFromCache(key);
+
+        verify(redisTemplate, times(1)).delete(key);
     }
 }
