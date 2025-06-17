@@ -22,7 +22,7 @@ public class MetalService extends MarketQuoteService {
     }
 
     public Map<String, Double> getMetalPrices() throws Exception {
-        JsonNode rootNode = getJsonFromUrl(apiUrl, 3600);
+        JsonNode rootNode = getJsonFromUrl(apiUrl);
         if (!"success".equals(rootNode.path("status").asText())) {
             throw new RuntimeException("Ошибка при получении данных");
         }
